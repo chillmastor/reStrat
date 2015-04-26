@@ -9,8 +9,8 @@ require "Sound"
  
 ReStrat = {
 	name = "ReStrat",
-	version = "1.8.9",
-	fileversion = 189,
+	version = "1.9.0",
+	fileversion = 190,
 	tVersions = {},
 	barSpacing = 6,
 	color = {
@@ -315,6 +315,30 @@ function ReStrat:OnRestore(loadlevel, tload)
 			strLabel = "Track Essence HP",
 			bEnabled = true,
 		}
+	end
+	if ReStrat.tEncounters["Kuralak the Defiler"].tModules["Track Egg Debuff (Pins)"] == nil then
+		ReStrat.tEncounters["Kuralak the Defiler"].tModules["Track Egg Debuff (Pins)"] = {
+			strLabel = "Track Egg Debuff (Pins)",
+			bEnabled = true,
+		}
+	end
+	if ReStrat.tEncounters["Dreadphage Ohmna"].tModules["Boredom (Tank Switch)"] == nil then
+		ReStrat.tEncounters["Dreadphage Ohmna"].tModules["Boredom (Tank Switch)"] = {
+			strLabel = "Boredom (Tank Switch)",
+			bEnabled = true,
+		}
+	end
+	if ReStrat.tEncounters["Dreadphage Ohmna"].tModules["Tentacle Spawns"] == nil then
+		ReStrat.tEncounters["Dreadphage Ohmna"].tModules["Tentacle Spawns"] = {
+			strLabel = "Tentacle Spawns",
+			bEnabled = true,
+		}
+	end
+
+	
+	--Delete Old Entries
+	if ReStrat.tEncounters["Kuralak the Defiler"].tModules["Chromosome Corruption"] ~= nil then
+		ReStrat.tEncounters["Kuralak the Defiler"].tModules["Chromosome Corruption"] = nil
 	end
 	
 	
@@ -644,8 +668,8 @@ function ReStrat:OnDelayLoad()
 			strCategory  = "Genetic Archives",
 			trackHealth = nil,
 			tModules = {
-				["Chromosome Corruption"] = {
-					strLabel = "Chromosome Corruption",
+				["Track Egg Debuff (Pins)"] = {
+					strLabel = "Track Egg Debuff (Pins)",
 					bEnabled = true,
 				},
 				["Cultivate Corruption"] = {
@@ -672,20 +696,28 @@ function ReStrat:OnDelayLoad()
 			strCategory  = "Genetic Archives",
 			trackHealth = nil,
 			tModules = {
-				["Devour"] = {
-					strLabel = "Devour",
-					bEnabled = true,
-				},
-				["Genetic Torrent"] = {
-					strLabel = "Genetic Torrent (Spew)",
-					bEnabled = true,
-				},
-				["Track Generators [Event]"] = {
-					strLabel = "Track Generators [Event]",
-					bEnabled = true,
-				},
+			["Devour"] = {
+				strLabel = "Devour",
+				bEnabled = true,
 			},
-		}
+			["Genetic Torrent"] = {
+				strLabel = "Genetic Torrent (Spew)",
+				bEnabled = true,
+			},
+			["Track Generators [Event]"] = {
+				strLabel = "Track Generators [Event]",
+				bEnabled = true,
+			},
+			["Boredom (Tank Switch)"] = {
+				strLabel = "Boredom (Tank Switch)",
+				bEnabled = false,
+			},
+			["Tentacle Spawns"] = {
+				strLabel = "Tentacle Spawns",
+				bEnabled = true,
+			},
+		},
+	}
 	end
 	if ReStrat.tEncounters["Phage Maw"] == nil then
 		ReStrat.tEncounters["Phage Maw"] = {
