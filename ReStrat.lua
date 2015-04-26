@@ -9,8 +9,8 @@ require "Sound"
  
 ReStrat = {
 	name = "ReStrat",
-	version = "1.9.0",
-	fileversion = 190,
+	version = "1.9.1",
+	fileversion = 191,
 	tVersions = {},
 	barSpacing = 6,
 	color = {
@@ -34,6 +34,7 @@ ReStrat = {
 	combatStarted = nil,
 	combatLog = {},
 	tSpellTriggers = {},
+	tShortcutBars = {},
 	tHealTriggers = {},
 	tAuraCache = {},
 	tPins = {},
@@ -59,6 +60,7 @@ function ReStrat:OnLoad()
 	self.wndLog        = Apollo.LoadForm(self.xmlDoc, "logForm", nil, self)
 	self.wndSettings   = Apollo.LoadForm(self.xmlDoc, "settingsForm", nil, self)
 	self.wndversion    = Apollo.LoadForm(self.xmlDoc, "versionform", nil, self)
+	self.wndActionBarItem = Apollo.LoadForm(self.xmlDoc, "ActionBarShortcutItem", nil, self)
 		
 	self.wndversion:Show(false, true)
 	self.wndMain:Show(false, true)
@@ -76,7 +78,10 @@ function ReStrat:OnLoad()
 	Apollo.RegisterEventHandler("UnitCreated",           "OnUnitCreated",       self)
 	Apollo.RegisterEventHandler("UnitDestroyed",         "OnUnitDestroyed",     self)
 	Apollo.RegisterEventHandler("UnitEnteredCombat",     "OnEnteredCombat",     self)
+	
 	Apollo.RegisterEventHandler("ChatMessage",           "OnChatMessage",       self)
+	Apollo.RegisterEventHandler("ShowActionBarShortcut", "OnShowActionBarShortcut", self)
+	
 	Apollo.RegisterEventHandler("PlayerResurrected",     "OnPlayerResurrected", self)
 	--Apollo.RegisterEventHandler("Group_AcceptInvite",	 "OnGroupAcceptInvite", self)
 	Apollo.RegisterEventHandler("Group_Join",            "OnGroup_Join",        self)
@@ -105,6 +110,11 @@ function ReStrat:OnLoad()
 	--This timer drives health bar updates
 	self.healthTimer = ApolloTimer.Create(0.5, true, "OnHealthTick", self)
 	self.healthTimer:Stop()
+	
+	--This timer delays stopping the fight until 7 seconds after the player gets out of combat
+    --to allow i.e. spellslingers to voidslip without timers ripping -- credits to Vim
+	self.outofcombatTimer = ApolloTimer.Create(7, false, "OnCombatTimeout", self)
+	self.outofcombatTimer:Stop()
 	
 	self.loadTimer = ApolloTimer.Create(3.5, false, "OnDelayLoad", self)
 	self.loadTimer:Stop()
@@ -335,10 +345,13 @@ function ReStrat:OnRestore(loadlevel, tload)
 		}
 	end
 
-	
 	--Delete Old Entries
 	if ReStrat.tEncounters["Kuralak the Defiler"].tModules["Chromosome Corruption"] ~= nil then
 		ReStrat.tEncounters["Kuralak the Defiler"].tModules["Chromosome Corruption"] = nil
+	end
+	
+	if ReStrat.tEncounters["Holo Hand"] ~= nil then
+		ReStrat.tEncounters["Holo Hand"]= nil
 	end
 	
 	
@@ -477,13 +490,6 @@ function ReStrat:OnDelayLoad()
 					bEnabled = true,
 				},
 			},
-		}
-	end
-	if ReStrat.tEncounters["Holo Hand"] == nil then
-		ReStrat.tEncounters["Holo Hand"] = {
-			strCategory  = "Not Important",
-			trackHealth = ReStrat.color.blue,
-			tModules = {},
 		}
 	end
 	
@@ -990,7 +996,7 @@ function ReStrat:OnUnitDestroyed(unit)
 end
 
 function ReStrat:OnEnteredCombat(unit, combat)
-	if unit:IsInYourGroup() or unit:IsThePlayer() then
+	if unit:IsInYourGroup() then
 		if combat then
 			--Clear combat log
 			self.combatLog = {}
@@ -998,6 +1004,14 @@ function ReStrat:OnEnteredCombat(unit, combat)
 		elseif not self:IsGroupInCombat() then
 			self:Stop()
 		end
+		
+	elseif unit:IsThePlayer() then
+		if combat then
+			self:Start()
+		else
+			self.outofcombatTimer:Start()
+		end
+	
 	else
 		--If combat starts, init unit profile
 		if combat then
@@ -1021,8 +1035,10 @@ function ReStrat:OnEnteredCombat(unit, combat)
 					else
 						ReStrat:avatusInit(unit)
 					end
-				elseif uName == "Holo Hand" then
-					ReStrat:avatusInit(unit)
+				elseif uName == "Mobius Physics Constructor" then
+					ReStrat:yellowInit(unit)
+				elseif uName == "Infinite Logic Loop" then
+					ReStrat:blueInit(unit)
 				elseif uName == "Data Devourer" then
 					ReStrat:devourerInit(unit)
 					
@@ -1149,6 +1165,7 @@ function ReStrat:Start()
 	self.combatStarted = GameLib.GetGameTime()
 	self.gameTimer:Start()
 	self.healthTimer:Start()
+	self.outofcombatTimer:Stop()
 end
 
 function ReStrat:Stop()
@@ -1166,6 +1183,7 @@ function ReStrat:Stop()
 	self.tDatachron = {}
 	self.tPinAuras = {}
 	self.tPins = {}
+	self.tShortcutBars = {}
 	ReStrat:destroyAllLandmarks()
 	
 	self.healthTimer:Stop()
@@ -1185,6 +1203,11 @@ end
 function ReStrat:OnPlayerResurrected()
 	ReStrat:Stop()
 end
+
+function ReStrat:OnCombatTimeout()
+	ReStrat:Stop()
+end
+
 
 function ReStrat:spairs(t, order)
     -- collect the keys
@@ -1282,6 +1305,17 @@ function ReStrat:OnChatMessage(channel, tMessage)
 
 	
 end
+
+function ReStrat:OnShowActionBarShortcut(nBar, bIsVisible, nShortcuts)
+	self.tShortcutBars[nBar] = {}
+	if bIsVisible then
+		for iBar=0,7 do
+			self.wndActionBarItem:SetContentId(nBar * 12 + iBar)
+			self.tShortcutBars[nBar][iBar+1] = self.wndActionBarItem:GetContent()
+		end
+	end
+end
+
 
 --/restrat
 function ReStrat:OnReStrat(strCmd, strParam)
